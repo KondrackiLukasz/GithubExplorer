@@ -16,8 +16,6 @@ function RepoDetails({route}) {
         {
           headers: {
             Accept: 'application/vnd.github.v3+json',
-            Authorization:
-              'token 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',
           },
         },
       );
@@ -27,7 +25,11 @@ function RepoDetails({route}) {
 
     fetchRepoDetails();
   }, [repoId]);
-
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A'; // Return 'N/A' or any placeholder if the date string is not provided
+    const date = new Date(dateString);
+    return isNaN(date) ? 'Invalid date' : format(date, 'PPP');
+  };
   const renderHeader = () => (
     <>
       <View style={styles.detailBlock}>
@@ -36,10 +38,10 @@ function RepoDetails({route}) {
           {repoDetails?.description || 'No description available.'}
         </Text>
         <Text style={styles.detailText}>
-          Created At: {format(new Date(repoDetails?.created_at), 'PPP')}
+          Created At: {formatDate(repoDetails?.created_at)}
         </Text>
         <Text style={styles.detailText}>
-          Last Updated: {format(new Date(repoDetails?.updated_at), 'PPP')}
+          Last Updated: {formatDate(repoDetails?.updated_at)}
         </Text>
         <Text style={styles.detailText}>
           Stars: {repoDetails?.stargazers_count}
