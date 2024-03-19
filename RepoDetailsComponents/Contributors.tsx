@@ -1,43 +1,50 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 // openContributorProfile and styles remain the same
 
 const Contributors = ({repoId, ownerLogin}) => {
   const [contributors, setContributors] = useState([]);
+  const [error, setError] = useState(''); // Add state to handle error messages
 
   useEffect(() => {
     const fetchContributors = async () => {
       const response = await fetch(
-        `https://api.github.com/repositories/${repoId}/contributors`,
+        `https://api.github.com/repositories/${repoId}/contributors?per_page=5`,
         {
           headers: {
             Accept: 'application/vnd.github.v3+json',
-
+            Authorization:
+              'token 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',
           },
         },
       );
       if (response.ok) {
-        // Check if response status is 200-299
         const data = await response.json();
         if (Array.isArray(data)) {
-          // Ensure data is an array
           setContributors(data);
         } else {
           console.error(
             'Expected an array of contributors, but received:',
             data,
           );
-          setContributors([]); // Set to empty array if not array
+          setError('Failed to load contributors data.'); // Update error message
+          setContributors([]);
         }
+      } else if (response.status === 403) {
+        // Specific handling for 403 error
+        //console.error('GitHub API error: 403 Forbidden - The amount of users is too large to fetch via the API.');
+        setError('The amount of users is too large to fetch via the API.');
       } else {
-        // Handle HTTP errors
+        // Handle other HTTP errors
         console.error(
           'GitHub API error:',
           response.status,
           await response.text(),
         );
-        setContributors([]); // Set to empty array on error
+        setError('Failed to load contributors data.'); // Update error message
+        setContributors([]);
       }
     };
 
@@ -46,39 +53,51 @@ const Contributors = ({repoId, ownerLogin}) => {
   return (
     <View style={styles.contributorsBlock}>
       <Text style={styles.blockTitle}>Contributors:</Text>
-      {contributors.slice(0, 5).map((contributor, index) => (
-        <Contributor
-          key={index}
-          contributor={contributor}
-          isOwner={contributor.login === ownerLogin}
-        />
-      ))}
+      {error ? (
+        <Text style={styles.errorText}>{error}</Text> // Display error message if exists
+      ) : (
+        contributors
+          .slice(0, 5)
+          .map((contributor, index) => (
+            <Contributor
+              key={index}
+              contributor={contributor}
+              isOwner={contributor.login === ownerLogin}
+            />
+          ))
+      )}
     </View>
   );
 };
-const Contributor = ({contributor, isOwner}) => (
-  <TouchableOpacity
-    style={styles.contributorContainer}
-    onPress={() => openContributorProfile(contributor.html_url)}>
-    <Image source={{uri: contributor.avatar_url}} style={styles.avatar} />
-    <View style={styles.textContainer}>
-      <Text style={styles.contributorName}>
-        {contributor.login}{' '}
-        {isOwner && <Text style={styles.ownerLabel}>(Owner)</Text>}
-      </Text>
-      <Text style={styles.contributions}>
-        Contributions: {contributor.contributions}
-      </Text>
-    </View>
-  </TouchableOpacity>
-);
 
-const openContributorProfile = url => {
-  // Implement functionality to open the contributor's GitHub profile
-  console.log(`Opening ${url}`);
+const Contributor = ({contributor, isOwner}) => {
+  const navigation = useNavigation(); // If navigation prop is not directly available
+
+  return (
+    <TouchableOpacity
+      style={styles.contributorContainer}
+      onPress={() =>
+        navigation.navigate('UserDetails', {contributorId: contributor.id})
+      }>
+      <Image source={{uri: contributor.avatar_url}} style={styles.avatar} />
+      <View style={styles.textContainer}>
+        <Text style={styles.contributorName}>
+          {contributor.login}{' '}
+          {isOwner && <Text style={styles.ownerLabel}>(Owner)</Text>}
+        </Text>
+        <Text style={styles.contributions}>
+          Contributions: {contributor.contributions}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 };
 
 const styles = StyleSheet.create({
+  errorText: {
+    color: 'red', // Choose an appropriate color for error messages
+    fontSize: 16, // Adjust size as needed
+  },
   contributorsBlock: {
     marginBottom: 20,
     padding: 10,

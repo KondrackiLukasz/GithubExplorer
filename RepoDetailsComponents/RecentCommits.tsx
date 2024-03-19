@@ -26,7 +26,8 @@ const RecentCommits = ({repoId}) => {
       {
         headers: {
           Accept: 'application/vnd.github.v3+json',
-
+          Authorization:
+            'token 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',
         },
       },
     );
